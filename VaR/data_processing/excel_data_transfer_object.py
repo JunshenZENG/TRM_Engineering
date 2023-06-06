@@ -7,7 +7,8 @@ import numpy as np
 @dataclass
 class VaRCalculationInput:
 
-    parameters_dictionary: Dict[str, Dict[str, Union[str, date, int, float, np.ndarray]]]
+    parameters_dictionary: Dict[str, Dict[str, Union[str, date, int, float]]]
     market_rate_matrix: np.ndarray
-
-
+    horizon: int
+    risk_type: str
+    spot_portfolio_value_list: List[float] = None

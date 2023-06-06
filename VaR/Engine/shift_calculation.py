@@ -1,15 +1,14 @@
 import numpy as np
 from abc import abstractmethod
 from copy import deepcopy
-from typing import List, Dict, Tuple, Union
 
 
 class ShiftCalculation:
     """ Base class for shift calculation. """
 
-    def __init__(self, market_rate_matrix: np.ndarray, horizon: List[int]):
+    def __init__(self, market_rate_matrix: np.ndarray, horizon: int):
         self._market_rate_matrix = market_rate_matrix
-        self._horizon = np.array(horizon)
+        self._horizon = horizon
 
         self._shifted_market_rate_matrix = None
         self._scenario_value_matrix = None
@@ -42,7 +41,7 @@ class ShiftCalculation:
 class AbsoluteShiftCalculation(ShiftCalculation):
     """ Class for absolute shift calculation. """
 
-    def __init__(self, market_rate_matrix: np.ndarray, horizon: List[int]):
+    def __init__(self, market_rate_matrix: np.ndarray, horizon: int):
         super().__init__(market_rate_matrix=market_rate_matrix, horizon=horizon)
 
     def get_shifted_market_rate(self):
@@ -65,7 +64,7 @@ class AbsoluteShiftCalculation(ShiftCalculation):
 class LogarithmicShiftCalculation(ShiftCalculation):
     """ Class for logarithmic shift calculation. """
 
-    def __init__(self, market_rate_matrix: np.ndarray, horizon: List[int]):
+    def __init__(self, market_rate_matrix: np.ndarray, horizon: int):
         super().__init__(market_rate_matrix=market_rate_matrix, horizon=horizon)
 
     def get_shifted_market_rate(self):
@@ -88,7 +87,7 @@ class LogarithmicShiftCalculation(ShiftCalculation):
 class RelativeShiftCalculation(ShiftCalculation):
     """ Class for relative shift calculation. """
 
-    def __init__(self, market_rate_matrix: np.ndarray, horizon: List[int]):
+    def __init__(self, market_rate_matrix: np.ndarray, horizon: int):
         super().__init__(market_rate_matrix=market_rate_matrix, horizon=horizon)
 
     def get_shifted_market_rate(self):
@@ -106,3 +105,4 @@ class RelativeShiftCalculation(ShiftCalculation):
         original_shifted_market_rate = deepcopy(self.get_shifted_market_rates_matrix())
         scenario_value_matrix = original_market_rate[1:, :] * (1 + original_shifted_market_rate)
         self.set_scenario_value_matrix(scenario_value_matrix)
+
