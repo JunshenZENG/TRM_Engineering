@@ -38,7 +38,11 @@ class OptionPricingExcelReader:
         input_data_dict['r'] = input_data['r_cont'].values[0]
         input_data_dict['sigma'] = input_data['vol'].values[0]
         input_data_dict['forward_pricing'] = input_data['forward_pricing'].values[0]
-        input_data_dict['div_yield_cont'] = input_data['div_yield_cont'].values[0]
+        # if the column 'div_yield_cont' is null, then set it to 0
+        if np.isnan(input_data['div_yield_cont'].values[0]):
+            input_data_dict['div_yield_cont'] = 0
+        else:
+            input_data_dict['div_yield_cont'] = input_data['div_yield_cont'].values[0]
 
         self.input_data_dict = input_data_dict
         self.forward_pricing = input_data_dict['forward_pricing']

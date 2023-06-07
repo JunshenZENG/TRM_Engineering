@@ -41,3 +41,5 @@ class BSUnitTest:
             # test put price
             assert np.isclose(bs_model.put_option, test_data['put_price'], rtol=1e-3), \
                 f"test_id: {test_id}, put_price: {bs_model.put_option}, expected: {test_data['put_price']}"
+
+        print("All unit tests passed.")

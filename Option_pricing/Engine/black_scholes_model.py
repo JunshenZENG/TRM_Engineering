@@ -16,6 +16,7 @@ class BlackScholesModel:
                 'risk_free_rate': float
                 'time_to_maturity': float
                 'volatility': float
+                'div_yield_cont': float
 
         """
         self.parameters = parameters
@@ -25,6 +26,7 @@ class BlackScholesModel:
         self._risk_free_rate = self.parameters['r']
         self._time_to_maturity = self.parameters['T']
         self._volatility = self.parameters['sigma']
+        self._div_yield_cont = self.parameters['div_yield_cont']
 
         # Initialize d1 and d2
         self.d1_value = None
@@ -45,68 +47,70 @@ class BlackScholesModel:
         self.put_rho_value = None
 
     @staticmethod
-    def d1(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def d1(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate d1
-        return (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
+        return (np.log(S/K) + (r - div + sigma**2/2)*T)/(sigma*np.sqrt(T))
 
     @staticmethod
-    def d2(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def d2(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate d2
-        return (np.log(S/K) + (r - sigma**2/2)*T)/(sigma*np.sqrt(T))
+        return (np.log(S/K) + (r - div - sigma**2/2)*T)/(sigma*np.sqrt(T))
 
     @staticmethod
-    def call_price(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def call_price(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate call option price
-        return S*norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T)) - \
-               K*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T))
+        return S*np.exp(-div*T)*norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T, div)) - \
+                K*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T, div))
 
     @staticmethod
-    def put_price(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def put_price(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate put option price
-        return -S*norm.cdf(-BlackScholesModel.d1(S, K, r, sigma, T)) + \
-               K*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T))
+        return K*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T, div)) - \
+                S*np.exp(-div*T)*norm.cdf(-BlackScholesModel.d1(S, K, r, sigma, T, div))
 
     @staticmethod
-    def call_delta(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def call_delta(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate call delta
-        return norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T))
+        return norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T, div))
 
     @staticmethod
-    def put_delta(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def put_delta(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate put delta
-        return norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T)) - 1
+        return norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T, div)) - 1
 
     @staticmethod
-    def gamma(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def gamma(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate gamma
-        return norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T))/(S*sigma*np.sqrt(T))
+        return norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T, div))/(S*sigma*np.sqrt(T))
 
     @staticmethod
-    def vega(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def vega(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate vega
-        return S*np.sqrt(T)*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T))
+        return S*np.exp(-div*T)*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T, div))*np.sqrt(T)
 
     @staticmethod
-    def call_theta(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def call_theta(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate call theta
-        return -(S*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T))*sigma)/(2*np.sqrt(T)) - \
-               r*K*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T))
+        return -(S*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T, div))*sigma)/(2*np.sqrt(T)) - \
+                  r*K*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T, div)) + \
+                  div*S*np.exp(-div*T)*norm.cdf(BlackScholesModel.d1(S, K, r, sigma, T, div))
 
     @staticmethod
-    def put_theta(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def put_theta(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate put theta
-        return -(S*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T))*sigma)/(2*np.sqrt(T)) + \
-               r*K*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T))
+        return -(S*norm.pdf(BlackScholesModel.d1(S, K, r, sigma, T, div))*sigma)/(2*np.sqrt(T)) + \
+                    r*K*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T, div)) - \
+                    div*S*np.exp(-div*T)*norm.cdf(-BlackScholesModel.d1(S, K, r, sigma, T, div))
 
     @staticmethod
-    def call_rho(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def call_rho(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate call rho
-        return K*T*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T))
+        return K*T*np.exp(-r*T)*norm.cdf(BlackScholesModel.d2(S, K, r, sigma, T, div))
 
     @staticmethod
-    def put_rho(S: float, K: float, r: float, sigma: float, T: float) -> float:
+    def put_rho(S: float, K: float, r: float, sigma: float, T: float, div: float) -> float:
         # Calculate put rho
-        return -K*T*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T))
+        return -K*T*np.exp(-r*T)*norm.cdf(-BlackScholesModel.d2(S, K, r, sigma, T, div))
 
     def run(self):
         """
@@ -115,34 +119,33 @@ class BlackScholesModel:
         """
         # Calculate d1 and d2
         self.d1_value = self.d1(self._stock_price, self._strike_price, self._risk_free_rate,
-                                self._volatility, self._time_to_maturity)
+                                self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.d2_value = self.d2(self._stock_price, self._strike_price, self._risk_free_rate,
-                                self._volatility, self._time_to_maturity)
+                                self._volatility, self._time_to_maturity, self._div_yield_cont)
 
         # Calculate option prices
         self.call_option = self.call_price(self._stock_price, self._strike_price, self._risk_free_rate,
-                                           self._volatility, self._time_to_maturity)
-
+                                           self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.put_option = self.put_price(self._stock_price, self._strike_price, self._risk_free_rate,
-                                         self._volatility, self._time_to_maturity)
+                                         self._volatility, self._time_to_maturity, self._div_yield_cont)
 
         # Calculate Greeks
         self.call_delta_value = self.call_delta(self._stock_price, self._strike_price, self._risk_free_rate,
-                                                self._volatility, self._time_to_maturity)
+                                                self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.put_delta_value = self.put_delta(self._stock_price, self._strike_price, self._risk_free_rate,
-                                              self._volatility, self._time_to_maturity)
+                                              self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.gamma_value = self.gamma(self._stock_price, self._strike_price, self._risk_free_rate,
-                                      self._volatility, self._time_to_maturity)
+                                      self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.vega_value = self.vega(self._stock_price, self._strike_price, self._risk_free_rate,
-                                    self._volatility, self._time_to_maturity)
+                                    self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.call_theta_value = self.call_theta(self._stock_price, self._strike_price, self._risk_free_rate,
-                                                self._volatility, self._time_to_maturity)
+                                                self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.put_theta_value = self.put_theta(self._stock_price, self._strike_price, self._risk_free_rate,
-                                              self._volatility, self._time_to_maturity)
+                                              self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.call_rho_value = self.call_rho(self._stock_price, self._strike_price, self._risk_free_rate,
-                                            self._volatility, self._time_to_maturity)
+                                            self._volatility, self._time_to_maturity, self._div_yield_cont)
         self.put_rho_value = self.put_rho(self._stock_price, self._strike_price, self._risk_free_rate,
-                                          self._volatility, self._time_to_maturity)
+                                          self._volatility, self._time_to_maturity, self._div_yield_cont)
 
     # ------------------------------ Getters ------------------------------ #
     def get_stock_price(self) -> float:
@@ -233,6 +236,21 @@ class BlackScholesModel:
 
     def set_time_to_maturity(self, time_to_maturity: float) -> None:
         self._time_to_maturity = time_to_maturity
+        self.d1_value = None
+        self.d2_value = None
+        self.call_option = None
+        self.put_option = None
+        self.call_delta_value = None
+        self.put_delta_value = None
+        self.gamma_value = None
+        self.vega_value = None
+        self.call_theta_value = None
+        self.put_theta_value = None
+        self.call_rho_value = None
+        self.put_rho_value = None
+
+    def set_div_yield_cont(self, div_yield_cont: float) -> None:
+        self._div_yield_cont = div_yield_cont
         self.d1_value = None
         self.d2_value = None
         self.call_option = None
