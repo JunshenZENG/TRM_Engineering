@@ -19,7 +19,7 @@ class HistoricalVaRModel:
         scenario_pnl_matrix = None
         for scenario_pnl_calculation_object in self._scenario_pnl_calculation_object_list:
             if scenario_pnl_matrix is None:
-                scenario_pnl_matrix = scenario_pnl_calculation_object.get_scenario_pnl_matrix()
+                scenario_pnl_matrix = deepcopy(scenario_pnl_calculation_object.get_scenario_pnl_matrix())
             else:
                 # concatenate the scenario PnL matrix to the right
                 scenario_pnl_matrix = np.concatenate((scenario_pnl_matrix,
